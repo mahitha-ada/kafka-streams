@@ -1,0 +1,28 @@
+micronaut:
+  application:
+    name: kafka-streams-demo
+  server:
+    port: 8081
+
+kafka:
+  bootstrap:
+    servers: localhost:9092
+  streams:
+    application:
+      id: word-count-app
+    default:
+      key:
+        serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      value:
+        serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+    processing:
+      guarantee: exactly_once_v2
+    commit:
+      interval:
+        ms: 1000
+
+logger:
+  levels:
+    com.example: DEBUG
+    org.apache.kafka: INFO
+
