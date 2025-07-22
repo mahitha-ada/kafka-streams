@@ -40,7 +40,6 @@ curl http://localhost:8081/api/wordcounts/hello
 - **docker-compose.yml**: Local Kafka setup
 - **TESTING.md**: How to test everything properly
 - **TROUBLESHOOTING.md**: Common issues and fixes
-- **images/**: Architecture diagrams
 
 ## Key Features
 
