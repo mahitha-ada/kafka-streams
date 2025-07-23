@@ -2,27 +2,42 @@ micronaut:
   application:
     name: kafka-streams-demo
   server:
-    port: 8081
+    port: 8082
 
 kafka:
   bootstrap:
     servers: localhost:9092
-  streams:
-    application:
-      id: word-count-app
+  producers:
     default:
-      key:
-        serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      value:
-        serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-    processing:
-      guarantee: exactly_once_v2
-    commit:
-      interval:
-        ms: 1000
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  consumers:
+    default:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  streams:
+    default:
+      application:
+        id: kafka-streams-demo
+      bootstrap:
+        servers: localhost:9092
+      default:
+        key:
+          serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        value:
+          serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      processing:
+        guarantee: exactly_once_v2
+      commit:
+        interval:
+          ms: 1000
+      replication:
+        factor: 1
+      num:
+        stream:
+          threads: 1
 
 logger:
   levels:
     com.example: DEBUG
     org.apache.kafka: INFO
-

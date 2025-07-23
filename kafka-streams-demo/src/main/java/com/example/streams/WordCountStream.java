@@ -3,12 +3,13 @@ package com.example.streams;
 import com.example.model.TextMessage;
 import com.example.model.WordCount;
 import com.example.serde.JsonSerde;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.micronaut.configuration.kafka.streams.ConfiguredStreamBuilder;
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
@@ -35,31 +36,56 @@ public class WordCountStream {
     public static final String OUTPUT_TOPIC = "word-counts";
     public static final String WORD_COUNT_STORE = "word-count-store";
 
+    private final ObjectMapper objectMapper;
+    
+    public WordCountStream() {
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
+    }
+
     /**
      * Creates the Kafka Streams topology for word counting.
      * 
      * @param builder The configured stream builder from Micronaut
-     * @return The configured StreamsBuilder
+     * @return The configured KStream for text message processing
      */
     @Singleton
-    @Named("word-count-stream")
-    StreamsBuilder wordCountStream(ConfiguredStreamBuilder builder) {
+    @Named("default")
+    public KStream<String, String> wordCountStream(ConfiguredStreamBuilder builder) {
 
         // Create JSON serdes for custom classes
         JsonSerde<TextMessage> textMessageSerde = new JsonSerde<>(TextMessage.class);
         JsonSerde<WordCount> wordCountSerde = new JsonSerde<>(WordCount.class);
 
-        // Create the input stream from text messages topic
-        KStream<String, TextMessage> textStream = builder.stream(
+        // Create the input stream from text messages topic - reading JSON strings
+        KStream<String, String> textStream = builder.stream(
             INPUT_TOPIC,
-            Consumed.with(Serdes.String(), textMessageSerde)
+            Consumed.with(Serdes.String(), Serdes.String())
         );
 
-        // Process the stream: split words, count, and output
+        // Process the stream: parse JSON, split words, count, and output
         textStream
+                // Parse JSON string to TextMessage object and extract content
+                .mapValues(jsonString -> {
+                    try {
+                        System.out.println("Processing JSON: " + jsonString);
+                        // Parse the JSON string directly using ObjectMapper
+                        TextMessage message = objectMapper.readValue(jsonString, TextMessage.class);
+                        String content = message.getContent();
+                        System.out.println("Extracted content: " + content);
+                        return content;
+                    } catch (Exception e) {
+                        // Log and skip invalid messages
+                        System.err.println("Error parsing message: " + e.getMessage());
+                        e.printStackTrace();
+                        return "";
+                    }
+                })
+                // Filter out empty content
+                .filter((key, content) -> content != null && !content.trim().isEmpty())
                 // Extract words from each message content
-                .flatMapValues(message -> Arrays.stream(
-                    message.getContent().toLowerCase().split("\\W+"))
+                .flatMapValues(content -> Arrays.stream(
+                    content.toLowerCase().split("\\W+"))
                     .filter(word -> !word.isEmpty() && word.length() > 2) // Filter short words
                     .collect(Collectors.toList()))
                 
@@ -77,7 +103,7 @@ public class WordCountStream {
                 // Send results to output topic
                 .to(OUTPUT_TOPIC, Produced.with(Serdes.String(), wordCountSerde));
 
-        return builder;
+        return textStream;
     }
 }
 

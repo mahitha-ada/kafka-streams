@@ -7,11 +7,13 @@ Comprehensive testing instructions for the Micronaut + Kafka Streams application
 Before running tests, ensure you have:
 
 1. **Kafka Infrastructure Running:**
+
    ```bash
    docker compose up -d
    ```
 
 2. **Application Started:**
+
    ```bash
    cd kafka-streams-demo
    ./gradlew run
@@ -19,7 +21,7 @@ Before running tests, ensure you have:
 
 3. **Verify Health:**
    ```bash
-   curl http://localhost:8081/health
+   curl http://localhost:8082/health
    # Expected: {"status":"UP"}
    ```
 
@@ -28,8 +30,9 @@ Before running tests, ensure you have:
 ### Message Ingestion
 
 **Send a Simple Message:**
+
 ```bash
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{
     "content": "hello world hello kafka streams",
@@ -38,24 +41,26 @@ curl -X POST http://localhost:8081/api/messages \
 ```
 
 **Expected Response:**
+
 ```
 Message sent with ID: [UUID]
 ```
 
 **Send Multiple Messages:**
+
 ```bash
 # Message 1
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "kafka streams processing", "userId": "user1"}'
 
-# Message 2  
-curl -X POST http://localhost:8081/api/messages \
+# Message 2
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "real time data processing", "userId": "user2"}'
 
 # Message 3
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "micronaut kafka integration", "userId": "user3"}'
 ```
@@ -63,11 +68,13 @@ curl -X POST http://localhost:8081/api/messages \
 ### Word Count Queries
 
 **Query Specific Word:**
+
 ```bash
-curl http://localhost:8081/api/wordcounts/processing
+curl http://localhost:8082/api/wordcounts/processing
 ```
 
 **Expected Response:**
+
 ```json
 {
   "word": "processing",
@@ -76,37 +83,42 @@ curl http://localhost:8081/api/wordcounts/processing
 ```
 
 **Query Non-existent Word:**
+
 ```bash
-curl http://localhost:8081/api/wordcounts/nonexistent
+curl http://localhost:8082/api/wordcounts/nonexistent
 ```
 
 **Expected Response:**
+
 ```json
 {
-  "word": "nonexistent", 
+  "word": "nonexistent",
   "count": 0
 }
 ```
 
 **Get Top Words:**
+
 ```bash
-curl http://localhost:8081/api/wordcounts?limit=5
+curl http://localhost:8082/api/wordcounts?limit=5
 ```
 
 **Expected Response:**
+
 ```json
 [
-  {"word": "processing", "count": 2},
-  {"word": "data", "count": 1},
-  {"word": "kafka", "count": 2},
-  {"word": "streams", "count": 1},
-  {"word": "real", "count": 1}
+  { "word": "processing", "count": 2 },
+  { "word": "data", "count": 1 },
+  { "word": "kafka", "count": 2 },
+  { "word": "streams", "count": 1 },
+  { "word": "real", "count": 1 }
 ]
 ```
 
 **Get All Words (Default Limit):**
+
 ```bash
-curl http://localhost:8081/api/wordcounts
+curl http://localhost:8082/api/wordcounts
 ```
 
 ## Integration Testing
@@ -114,6 +126,7 @@ curl http://localhost:8081/api/wordcounts
 ### End-to-End Workflow
 
 **Complete Test Scenario:**
+
 ```bash
 #!/bin/bash
 
@@ -121,7 +134,7 @@ echo "=== Starting End-to-End Test ==="
 
 # 1. Send test message
 echo "Sending test message..."
-RESPONSE=$(curl -s -X POST http://localhost:8081/api/messages \
+RESPONSE=$(curl -s -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "testing one two testing", "userId": "test-user"}')
 echo "Response: $RESPONSE"
@@ -132,7 +145,7 @@ sleep 3
 
 # 3. Query word count
 echo "Querying word count for 'testing'..."
-COUNT_RESPONSE=$(curl -s http://localhost:8081/api/wordcounts/testing)
+COUNT_RESPONSE=$(curl -s http://localhost:8082/api/wordcounts/testing)
 echo "Count Response: $COUNT_RESPONSE"
 
 # 4. Verify result
@@ -148,16 +161,17 @@ echo "=== Test Complete ==="
 ### Load Testing
 
 **Send Multiple Messages Rapidly:**
+
 ```bash
 #!/bin/bash
 
 echo "=== Load Test: Sending 100 messages ==="
 
 for i in {1..100}; do
-    curl -s -X POST http://localhost:8081/api/messages \
+    curl -s -X POST http://localhost:8082/api/messages \
       -H "Content-Type: application/json" \
       -d "{\"content\": \"load test message number $i\", \"userId\": \"load-test-$i\"}" &
-    
+
     # Limit concurrent requests
     if (( i % 10 == 0 )); then
         wait
@@ -173,9 +187,9 @@ sleep 5
 
 # Check results
 echo "Checking word counts..."
-curl -s http://localhost:8081/api/wordcounts/load | jq .
-curl -s http://localhost:8081/api/wordcounts/test | jq .
-curl -s http://localhost:8081/api/wordcounts/message | jq .
+curl -s http://localhost:8082/api/wordcounts/load | jq .
+curl -s http://localhost:8082/api/wordcounts/test | jq .
+curl -s http://localhost:8082/api/wordcounts/message | jq .
 ```
 
 ## Unit Testing
@@ -183,17 +197,20 @@ curl -s http://localhost:8081/api/wordcounts/message | jq .
 ### Running Application Tests
 
 **Execute All Tests:**
+
 ```bash
 cd kafka-streams-demo
 ./gradlew test
 ```
 
 **Run Specific Test Class:**
+
 ```bash
 ./gradlew test --tests "com.example.KafkaStreamsDemoTest"
 ```
 
 **Run Tests with Coverage:**
+
 ```bash
 ./gradlew test jacocoTestReport
 # View coverage report at: build/reports/jacoco/test/html/index.html
@@ -202,16 +219,19 @@ cd kafka-streams-demo
 ### Test Categories
 
 **Controller Tests:**
+
 - Message ingestion endpoint validation
 - Word count query endpoint validation
 - Error handling scenarios
 
 **Service Tests:**
+
 - Kafka producer functionality
 - State store query operations
 - Business logic validation
 
 **Integration Tests:**
+
 - End-to-end message flow
 - Kafka Streams topology testing
 - State store persistence
@@ -221,6 +241,7 @@ cd kafka-streams-demo
 ### Throughput Testing
 
 **Measure Message Processing Rate:**
+
 ```bash
 #!/bin/bash
 
@@ -230,10 +251,10 @@ MESSAGE_COUNT=1000
 echo "=== Throughput Test: $MESSAGE_COUNT messages ==="
 
 for i in $(seq 1 $MESSAGE_COUNT); do
-    curl -s -X POST http://localhost:8081/api/messages \
+    curl -s -X POST http://localhost:8082/api/messages \
       -H "Content-Type: application/json" \
       -d "{\"content\": \"throughput test $i\", \"userId\": \"perf-test\"}" > /dev/null &
-    
+
     # Batch requests to avoid overwhelming the system
     if (( i % 50 == 0 )); then
         wait
@@ -256,6 +277,7 @@ echo "   Rate: ${RATE} messages/second"
 ### Latency Testing
 
 **Measure Response Times:**
+
 ```bash
 #!/bin/bash
 
@@ -263,14 +285,14 @@ echo "=== Latency Test ==="
 
 for i in {1..10}; do
     START=$(date +%s%N)
-    
-    curl -s -X POST http://localhost:8081/api/messages \
+
+    curl -s -X POST http://localhost:8082/api/messages \
       -H "Content-Type: application/json" \
       -d '{"content": "latency test", "userId": "latency-test"}' > /dev/null
-    
+
     END=$(date +%s%N)
     LATENCY=$(( (END - START) / 1000000 ))  # Convert to milliseconds
-    
+
     echo "Request $i: ${LATENCY}ms"
 done
 ```
@@ -280,24 +302,27 @@ done
 ### Invalid Request Testing
 
 **Missing Required Fields:**
+
 ```bash
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"userId": "test"}'
 # Expected: 400 Bad Request
 ```
 
 **Invalid JSON:**
+
 ```bash
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "test", "userId": }'
 # Expected: 400 Bad Request
 ```
 
 **Empty Content:**
+
 ```bash
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "", "userId": "test"}'
 # Expected: Should process but not generate word counts
@@ -306,12 +331,13 @@ curl -X POST http://localhost:8081/api/messages \
 ### Service Unavailability Testing
 
 **Test with Kafka Down:**
+
 ```bash
 # Stop Kafka
 docker compose stop kafka
 
 # Try sending message
-curl -X POST http://localhost:8081/api/messages \
+curl -X POST http://localhost:8082/api/messages \
   -H "Content-Type: application/json" \
   -d '{"content": "test", "userId": "test"}'
 # Expected: 500 Internal Server Error
@@ -325,29 +351,33 @@ docker compose start kafka
 ### Application Metrics
 
 **Health Check:**
+
 ```bash
-curl http://localhost:8081/health
+curl http://localhost:8082/health
 ```
 
 **Application Info:**
+
 ```bash
-curl http://localhost:8081/info
+curl http://localhost:8082/info
 ```
 
 ### Kafka Monitoring
 
 **Check Topic Messages:**
+
 ```bash
 # View messages in input topic
 kafka-console-consumer --bootstrap-server localhost:9092 \
   --topic text-messages --from-beginning --timeout-ms 5000
 
-# View word counts in output topic  
+# View word counts in output topic
 kafka-console-consumer --bootstrap-server localhost:9092 \
   --topic word-counts --from-beginning --timeout-ms 5000
 ```
 
 **Check Consumer Lag:**
+
 ```bash
 kafka-consumer-groups --bootstrap-server localhost:9092 \
   --describe --group word-count-app
@@ -358,6 +388,7 @@ kafka-consumer-groups --bootstrap-server localhost:9092 \
 ### Reset Application State
 
 **Clean State Stores:**
+
 ```bash
 # Stop application
 # Remove state directory
@@ -366,6 +397,7 @@ rm -rf /tmp/kafka-streams/word-count-app
 ```
 
 **Reset Kafka Topics:**
+
 ```bash
 # Delete and recreate topics
 kafka-topics --delete --topic text-messages --bootstrap-server localhost:9092
@@ -377,6 +409,7 @@ kafka-topics --delete --topic word-counts --bootstrap-server localhost:9092
 ## Automated Testing Script
 
 **Complete Test Suite:**
+
 ```bash
 #!/bin/bash
 
@@ -386,7 +419,7 @@ echo "=== Micronaut Kafka Streams Test Suite ==="
 wait_for_service() {
     echo "Waiting for application to be ready..."
     for i in {1..30}; do
-        if curl -s http://localhost:8081/health > /dev/null; then
+        if curl -s http://localhost:8082/health > /dev/null; then
             echo "✅ Application is ready"
             return 0
         fi
@@ -401,10 +434,10 @@ run_test() {
     local test_name="$1"
     local command="$2"
     local expected="$3"
-    
+
     echo "Running: $test_name"
     result=$(eval "$command")
-    
+
     if echo "$result" | grep -q "$expected"; then
         echo "✅ PASS: $test_name"
         return 0
@@ -425,13 +458,13 @@ TOTAL_COUNT=0
 
 # Test 1: Health check
 ((TOTAL_COUNT++))
-if run_test "Health Check" "curl -s http://localhost:8081/health" "UP"; then
+if run_test "Health Check" "curl -s http://localhost:8082/health" "UP"; then
     ((PASS_COUNT++))
 fi
 
 # Test 2: Send message
 ((TOTAL_COUNT++))
-if run_test "Send Message" "curl -s -X POST http://localhost:8081/api/messages -H 'Content-Type: application/json' -d '{\"content\": \"test message\", \"userId\": \"test\"}'" "Message sent"; then
+if run_test "Send Message" "curl -s -X POST http://localhost:8082/api/messages -H 'Content-Type: application/json' -d '{\"content\": \"test message\", \"userId\": \"test\"}'" "Message sent"; then
     ((PASS_COUNT++))
 fi
 
@@ -440,13 +473,13 @@ sleep 3
 
 # Test 3: Query word count
 ((TOTAL_COUNT++))
-if run_test "Query Word Count" "curl -s http://localhost:8081/api/wordcounts/test" "test"; then
+if run_test "Query Word Count" "curl -s http://localhost:8082/api/wordcounts/test" "test"; then
     ((PASS_COUNT++))
 fi
 
 # Test 4: Get top words
 ((TOTAL_COUNT++))
-if run_test "Get Top Words" "curl -s http://localhost:8081/api/wordcounts?limit=5" "word"; then
+if run_test "Get Top Words" "curl -s http://localhost:8082/api/wordcounts?limit=5" "word"; then
     ((PASS_COUNT++))
 fi
 
@@ -469,11 +502,10 @@ Save this as `run-tests.sh`, make it executable with `chmod +x run-tests.sh`, an
 
 If tests fail, check:
 
-1. **Application Status:** `curl http://localhost:8081/health`
+1. **Application Status:** `curl http://localhost:8082/health`
 2. **Kafka Status:** `docker compose ps`
 3. **Application Logs:** Check console output for errors
 4. **Network Connectivity:** Ensure ports 8081, 9092, 2181 are accessible
 5. **Timing Issues:** Add delays between sending messages and querying results
 
 For more detailed troubleshooting, see `TROUBLESHOOTING.md`.
-

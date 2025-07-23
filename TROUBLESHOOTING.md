@@ -7,11 +7,13 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### State Store Corruption
 
 **Symptoms:**
+
 - Application fails to start with state store errors
 - `InvalidStateStoreException` during startup
 - Corrupted state directory messages
 
 **Causes:**
+
 - Unclean application shutdown
 - Disk space issues
 - File system corruption
@@ -19,6 +21,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Clean State Directory:**
+
    ```bash
    # Stop the application
    # Remove state directory (configured in application.yml)
@@ -27,13 +30,14 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
    ```
 
 2. **Configure Cleanup Policy:**
+
    ```yaml
    kafka:
      streams:
        state:
          cleanup:
            delay:
-             ms: 600000  # 10 minutes
+             ms: 600000 # 10 minutes
    ```
 
 3. **Implement Graceful Shutdown:**
@@ -49,6 +53,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### Kafka Connection Issues
 
 **Symptoms:**
+
 - `TimeoutException` during startup
 - "Cannot connect to Kafka" errors
 - Application hangs during initialization
@@ -56,22 +61,77 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Verify Kafka is Running:**
+
    ```bash
    docker compose ps
    # Should show kafka and zookeeper as "Up"
    ```
 
 2. **Check Network Connectivity:**
+
    ```bash
    telnet localhost 9092
    # Should connect successfully
    ```
 
 3. **Verify Bootstrap Servers Configuration:**
+
    ```yaml
    kafka:
      bootstrap:
-       servers: localhost:9092  # Ensure this matches your setup
+       servers: localhost:9092 # Ensure this matches your setup
+   ```
+
+4. **Create Required Topics:**
+
+   ```bash
+   # Create input topic
+   docker exec -it kafka kafka-topics --create \
+     --topic text-messages \
+     --bootstrap-server localhost:9092 \
+     --partitions 3 \
+     --replication-factor 1
+
+   # Create output topic
+   docker exec -it kafka kafka-topics --create \
+     --topic word-counts \
+     --bootstrap-server localhost:9092 \
+     --partitions 3 \
+     --replication-factor 1
+   ```
+
+### Jackson Serialization Issues
+
+**Symptoms:**
+
+- `JsonMappingException` with Java 8 time types
+- Cannot deserialize `java.time.Instant`
+- Serialization failures with `LocalDateTime`
+
+**Solutions:**
+
+1. **Add Jackson JSR310 Module:**
+
+   ```gradle
+   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+   ```
+
+2. **Register JavaTimeModule:**
+
+   ```java
+   @Override
+   public ObjectMapper objectMapper() {
+       ObjectMapper mapper = super.objectMapper();
+       mapper.registerModule(new JavaTimeModule());
+       return mapper;
+   }
+   ```
+
+3. **Configure JSON Serialization:**
+   ```yaml
+   jackson:
+     serialization:
+       write-dates-as-timestamps: false
    ```
 
 ## Runtime Issues
@@ -79,6 +139,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### High Memory Usage
 
 **Symptoms:**
+
 - OutOfMemoryError exceptions
 - Gradual memory increase over time
 - Poor application performance
@@ -86,16 +147,18 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Configure State Store Cache Size:**
+
    ```yaml
    kafka:
      streams:
        cache:
          max:
            bytes:
-             buffering: 10485760  # 10MB
+             buffering: 10485760 # 10MB
    ```
 
 2. **Use Windowed Operations:**
+
    ```java
    // Instead of unbounded aggregation
    .groupByKey()
@@ -112,6 +175,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### Processing Lag
 
 **Symptoms:**
+
 - Slow message processing
 - Increasing consumer lag
 - Delayed results in queries
@@ -119,6 +183,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Increase Parallelism:**
+
    ```bash
    # Create topics with more partitions
    kafka-topics --create --topic text-messages \
@@ -128,6 +193,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
    ```
 
 2. **Scale Application Instances:**
+
    ```bash
    # Run multiple instances
    java -jar app.jar --micronaut.server.port=8081 &
@@ -146,6 +212,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### Docker Compose Problems
 
 **Symptoms:**
+
 - Containers fail to start
 - Network connectivity issues
 - Port conflicts
@@ -153,12 +220,14 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Check Port Availability:**
+
    ```bash
    netstat -tlnp | grep -E '(2181|9092)'
    # Should show no conflicts
    ```
 
 2. **Clean Docker State:**
+
    ```bash
    docker compose down -v
    docker system prune -f
@@ -174,6 +243,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### Gradle Build Issues
 
 **Symptoms:**
+
 - Build failures
 - Dependency resolution errors
 - Compilation errors
@@ -181,11 +251,13 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Clean Build:**
+
    ```bash
    ./gradlew clean build
    ```
 
 2. **Check Java Version:**
+
    ```bash
    java -version
    # Should be Java 17 or higher
@@ -201,6 +273,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### API Test Failures
 
 **Symptoms:**
+
 - HTTP 500 errors
 - Connection refused errors
 - Timeout exceptions
@@ -208,12 +281,14 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Verify Application is Running:**
+
    ```bash
-   curl http://localhost:8081/health
+   curl http://localhost:8082/health
    # Should return 200 OK
    ```
 
 2. **Check Application Logs:**
+
    ```bash
    tail -f logs/application.log
    ```
@@ -221,14 +296,52 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 3. **Validate Request Format:**
    ```bash
    # Ensure proper JSON format
-   curl -X POST http://localhost:8081/api/messages \
+   curl -X POST http://localhost:8082/api/messages \
      -H "Content-Type: application/json" \
      -d '{"content": "test message", "userId": "test"}'
+   ```
+
+### Test State Directory Conflicts
+
+**Symptoms:**
+
+- Tests fail with "Unable to initialize state" errors
+- Multiple Kafka Streams instances error
+- State directory conflicts
+
+**Solutions:**
+
+1. **Create Test Configuration:**
+
+   ```yaml
+   # src/test/resources/application-test.yml
+   kafka:
+     streams:
+       default:
+         application:
+           id: kafka-streams-demo-test
+         state:
+           dir: /tmp/kafka-streams-test
+   ```
+
+2. **Use Test Environment:**
+
+   ```java
+   @MicronautTest(environments = "test")
+   class YourTest {
+       // test code
+   }
+   ```
+
+3. **Clean State Directories:**
+   ```bash
+   rm -rf /tmp/kafka-streams* /var/folders/*/kafka-streams*
    ```
 
 ### State Store Query Issues
 
 **Symptoms:**
+
 - Empty query results
 - `InvalidStateStoreException`
 - Stale data in queries
@@ -236,9 +349,10 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 **Solutions:**
 
 1. **Wait for State Store Initialization:**
+
    ```java
    // Check if state store is ready
-   ReadOnlyKeyValueStore<String, Long> store = 
+   ReadOnlyKeyValueStore<String, Long> store =
        kafkaStreams.store(StoreQueryParameters.fromNameAndType(
            WORD_COUNT_STORE, QueryableStoreTypes.keyValueStore()));
    ```
@@ -255,6 +369,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 ### Performance Monitoring
 
 **Key Metrics to Monitor:**
+
 - Consumer lag
 - Processing rate
 - State store size
@@ -262,6 +377,7 @@ Common issues and solutions when working with Micronaut + Kafka Streams applicat
 - CPU utilization
 
 **Monitoring Setup:**
+
 ```yaml
 # Add to application.yml
 management:
@@ -274,11 +390,13 @@ management:
 ### Deployment Issues
 
 **Common Problems:**
+
 - Resource constraints
 - Network policies
 - Configuration mismatches
 
 **Best Practices:**
+
 - Use health checks in orchestration
 - Configure proper resource limits
 - Implement graceful shutdown
@@ -297,6 +415,7 @@ If you encounter issues not covered in this guide:
 ## Useful Commands
 
 ### Kafka Operations
+
 ```bash
 # List topics
 kafka-topics --list --bootstrap-server localhost:9092
@@ -310,6 +429,7 @@ kafka-streams-application-reset --application-id word-count-app \
 ```
 
 ### Application Debugging
+
 ```bash
 # Enable debug logging
 export MICRONAUT_ENVIRONMENTS=development
@@ -323,4 +443,3 @@ lsof -p [PID] | wc -l
 ```
 
 This troubleshooting guide covers the most common issues encountered when developing and deploying Micronaut + Kafka Streams applications. Keep it handy for quick reference during development and production operations.
-

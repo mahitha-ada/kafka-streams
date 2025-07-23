@@ -19,6 +19,7 @@ dependencies {
     implementation("io.micronaut.kafka:micronaut-kafka-streams")
     implementation("org.apache.kafka:kafka-streams")
     implementation("org.apache.kafka:kafka-clients")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     compileOnly("io.micronaut:micronaut-http-client")
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("org.yaml:snakeyaml")

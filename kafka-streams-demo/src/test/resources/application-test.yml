@@ -1,0 +1,32 @@
+micronaut:
+  application:
+    name: kafka-streams-demo
+  server:
+    port: 8083
+
+kafka:
+  bootstrap:
+    servers: localhost:9092
+  streams:
+    default:
+      application:
+        id: kafka-streams-demo-test
+      default:
+        key:
+          serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        value:
+          serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      processing:
+        guarantee: exactly_once_v2
+      commit:
+        interval:
+          ms: 1000
+      state:
+        dir: /tmp/kafka-streams-test
+      client:
+        id: test-client
+
+logger:
+  levels:
+    com.example: DEBUG
+    org.apache.kafka: INFO
